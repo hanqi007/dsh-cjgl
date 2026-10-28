@@ -115,7 +115,7 @@ function textOf(node) {
 
 function render(state) {
   hookIndex = 0
-  presets = [state, null, null, '', null, null, null, null]
+  presets = [state, null, null, '', null, null, null, null, null]
   const out = []
   walk(registered.render(), out)
   return out
@@ -135,6 +135,25 @@ check('4 张插件卡片', view.filter((n) => n.cls.indexOf('__bm_card') === 0).
 check('显示版本', view.some((n) => n.text === 'v1.2.3'))
 check('有「生效中」', view.some((n) => n.text === '生效中'))
 check('默认开机动画带「默认」标', view.some((n) => n.cls === '__bm_defaultTag' && n.text === '默认'))
+
+/* 自动检查命中新版本 → 弹窗询问 */
+hookIndex = 0
+presets = [listState, null, null, '', null, null, null, null, { latest: '9.9.9', current: '3.0.5' }]
+const modalView = []
+walk(registered.render(), modalView)
+check('弹窗出现', modalView.some((n) => n.cls === '__bm_modal'))
+check('弹窗标题是「发现新版本」', modalView.some((n) => n.text === '发现新版本'))
+check('弹窗显示新版本号', modalView.some((n) => n.text.indexOf('v9.9.9') >= 0))
+check('弹窗有「立即更新」', modalView.some((n) => n.text === '立即更新'))
+check('弹窗有「稍后」', modalView.some((n) => n.text === '稍后'))
+const installBtn = modalView.find((n) => n.text === '立即更新' && n.props && n.props.onClick)
+if (installBtn) {
+  fetchCalls = []
+  installBtn.props.onClick()
+  check('点立即更新会发 /install-version', fetchCalls.some((u) => u.indexOf('/install-version') >= 0), JSON.stringify(fetchCalls))
+} else {
+  check('点立即更新会发 /install-version', false)
+}
 /* 卡片只保留 启用/停用 + 管理（其余操作收进管理页） */
 check('卡片有「启用」按钮', view.some((n) => n.text === '启用'))
 check('卡片有「管理」按钮', view.some((n) => n.text === '管理'))
@@ -183,7 +202,7 @@ const detailState = {
   ]
 }
 hookIndex = 0
-presets = [listState, null, null, '', null, null, null, detailState]
+presets = [listState, null, null, '', null, null, null, detailState, null]
 const detailView = []
 walk(registered.render(), detailView)
 check('配置页有「← 返回列表」', detailView.some((n) => n.text === '← 返回列表'))
