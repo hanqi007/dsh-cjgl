@@ -190,6 +190,13 @@ check('/list 不会把它自动停用', !!bootAfterOn && bootAfterOn.enabled ===
 check('autoDisabled 里没有它', (listAfterOn.autoDisabled || []).indexOf('hdd-console-boot') === -1,
   JSON.stringify(listAfterOn.autoDisabled))
 
+console.log('\n[11] 安全公告通道')
+const hostSrc = fs.readFileSync(path.join('lib', 'index.js'), 'utf8')
+check('指向 zjhqgx 仓库', hostSrc.indexOf("SECURITY_REPO = 'hanqi007/zjhqgx'") !== -1)
+check('有版本区间解析', hostSrc.indexOf('function matchesAffected') !== -1)
+check('有安全检查函数', hostSrc.indexOf('async function checkSecurity') !== -1)
+check('checkUpdate 合并安全结果', hostSrc.indexOf('value.security = await checkSecurity()') !== -1)
+
 const after = JSON.parse(fs.readFileSync(pkgPath, 'utf8'))
 check('写回后 bundles 合法', Array.isArray(after.dsh.profile.bundles) && after.dsh.profile.bundles.length > 0)
 check('dependencies 未被动', Object.keys(after.dependencies).length === Object.keys(pkgs).length)

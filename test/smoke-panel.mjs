@@ -151,7 +151,23 @@ if (installBtn) {
   fetchCalls = []
   installBtn.props.onClick()
   check('点立即更新会发 /install-version', fetchCalls.some((u) => u.indexOf('/install-version') >= 0), JSON.stringify(fetchCalls))
-} else {
+}
+
+/* 安全公告弹窗：标题变「安全补丁」，显示公告编号与修复版本 */
+hookIndex = 0
+presets = [listState, null, null, '', null, null, null, null, {
+  kind: 'security',
+  latest: '3.1.0',
+  current: '3.0.5',
+  advisory: { id: 'ZJHQGX-2026-001', severity: 'high', summary: '启用被自动停用', affected: '<3.0.2', fixed: '3.1.0' }
+}]
+const secView = []
+walk(registered.render(), secView)
+check('安全弹窗标题是「安全补丁」', secView.some((n) => n.text === '安全补丁'))
+check('显示公告编号', secView.some((n) => n.text.indexOf('ZJHQGX-2026-001') >= 0))
+check('显示等级', secView.some((n) => n.text.indexOf('high') >= 0))
+check('显示修复版本', secView.some((n) => n.text.indexOf('v3.1.0') >= 0))
+if (!installBtn) {
   check('点立即更新会发 /install-version', false)
 }
 /* 卡片只保留 启用/停用 + 管理（其余操作收进管理页） */
