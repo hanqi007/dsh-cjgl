@@ -76,6 +76,49 @@ DSH 的**启动与插件管理器**（"cjgl" = 插件管理）。在设置页里
 | 名字白名单 | 只接受扫描出来的名字 |
 | 原子写入 | 先备份 `.bak`，再 `tmp + rename` |
 
+## 插件健康检查
+
+设置页底部有「检查」按钮，点击调用 `GET /dsh-cjgl/check`，逐个插件核对：
+
+| 检查项 | 说明 |
+|---|---|
+| 包目录 | `node_modules/<name>` 是否存在 |
+| package.json | 能否解析 |
+| 配置文件 | JSON 是否损坏（未创建则标注「使用默认值」） |
+| 已启用 | 是否在 bundles 里 |
+
+报告会列出每个插件的结果，并对「多个开机动画同时启用」「核心 bundle 缺失」给出告警。
+
+## 新开机动画默认不启用
+
+`dsh plugin add` 会把新装的开机动画写进 `dsh.profile.bundles`，导致它自动抢首屏。管理器对此做了两件事：
+
+- **默认停用**：打开管理器时，凡是不在 `confirmedBoots` 名单里的开机动画，都会被自动移出 bundles，并在面板顶部提示「已自动停用新检测到的开机动画：xxx」
+- **手动确认**：点面板里的「使用 xxx」按钮，才会把它登记进 `confirmedBoots` 并启用（其他开机动画自动停用）
+
+配置项 `autoEnableNewBoot`（默认 `false`）控制这个策略；改成 `true` 就回到「装了什么就启用什么」的原生行为。
+
+`~/.dsh/dsh-cjgl.json`：
+
+```json
+{
+  "autoUpdate": false,
+  "confirmedBoots": [],
+  "autoEnableNewBoot": false
+}
+```
+
+接口：
+
+| 方法 | 路径 | 作用 |
+|---|---|---|
+| GET | `/dsh-cjgl/list` | 扫描插件、返回状态（并执行默认停用） |
+| GET | `/dsh-cjgl/check` | 健康检查报告 |
+| POST | `/dsh-cjgl/confirm-boot` | 确认使用某个开机动画 |
+| POST | `/dsh-cjgl/toggle` | 启用 / 停用 |
+| POST | `/dsh-cjgl/config` | 读写管理器配置 |
+| GET | `/dsh-cjgl/update` | 检查管理器自身更新 |
+
 ## 自动更新（默认关闭）
 
 设置 →「启动与插件」→ 更新：
@@ -87,9 +130,9 @@ DSH 的**启动与插件管理器**（"cjgl" = 插件管理）。在设置页里
 ## 安装
 
 ```bash
-dsh plugin --profile desktop add ./dsh-cjgl-2.2.1.tgz
+dsh plugin --profile desktop add ./dsh-cjgl-2.0.0.tgz
 # 或 web profile
-dsh plugin --profile web add ./dsh-cjgl-2.2.1.tgz
+dsh plugin --profile web add ./dsh-cjgl-2.0.0.tgz
 ```
 
 装完重启应用，设置页会多出「启动与插件」。
