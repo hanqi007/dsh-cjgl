@@ -66,12 +66,13 @@ const ctx = {
 }
 mod.apply(ctx)
 const byPath = Object.fromEntries(routes.map((r) => [r.path, r]))
-check('注册了 5 条路由', routes.length === 5, String(routes.length))
+check('注册了 6 条路由', routes.length === 6, String(routes.length))
 check('有 /dsh-cjgl/list', !!byPath['/dsh-cjgl/list'])
 check('有 /dsh-cjgl/toggle', !!byPath['/dsh-cjgl/toggle'])
 check('有 /dsh-cjgl/config', !!byPath['/dsh-cjgl/config'])
 check('有 /dsh-cjgl/update', !!byPath['/dsh-cjgl/update'])
 check('有 /dsh-cjgl/settings', !!byPath['/dsh-cjgl/settings'])
+check('有 /dsh-cjgl/action', !!byPath['/dsh-cjgl/action'])
 
 function fakeReq(method, body, url) {
   const req = Readable.from(body ? [Buffer.from(body)] : [])
@@ -163,6 +164,77 @@ const three = await call('/dsh-cjgl/settings?name=beta-startup', 'GET')
 check('没有配置文件的插件不报错', three.ok === true && three.config && typeof three.config === 'object')
 const four = await call('/dsh-cjgl/settings', 'GET')
 check('缺 name 报错', four.ok === false)
+
+console.log('\n[9] 默认开机动画')
+const cfgDefault0 = await call('/dsh-cjgl/config', 'GET')
+check('默认 defaultBoot 为空', cfgDefault0.config.defaultBoot === '', JSON.stringify(cfgDefault0.config))
+const setDefault = await call('/dsh-cjgl/action', 'POST', JSON.stringify({ name: 'hdd-console-boot', action: 'default' }))
+check('设为默认成功', setDefault.ok === true && setDefault.config.defaultBoot === 'hdd-console-boot', JSON.stringify(setDefault))
+const cfgDefault1 = await call('/dsh-cjgl/config', 'GET')
+check('默认值已落盘', cfgDefault1.config.defaultBoot === 'hdd-console-boot')
+const badDefault = await call('/dsh-cjgl/action', 'POST', JSON.stringify({ name: 'gamma-tool', action: 'default' }))
+check('非开机动画不能设为默认', badDefault.ok === false && /不是开机动画/.test(badDefault.error), badDefault.error)
+
+console.log('\n[10] 卸载')
+const un1 = await call('/dsh-cjgl/action', 'POST', JSON.stringify({ name: 'unrelated-pkg', action: 'uninstall' }))
+check('卸载成功', un1.ok === true)
+check('移出 bundles', !un1.bundles.includes('unrelated-pkg'))
+check('目录已删除', !fs.existsSync(path.join(profile, 'node_modules', 'unrelated-pkg')))
+const afterUn = JSON.parse(fs.readFileSync(pkgPath, 'utf8'))
+check('依赖已移除', !afterUn.dependencies['unrelated-pkg'])
+check('其他依赖没动', !!afterUn.dependencies['hdd-console-boot'])
+check('卸载后 scan 里不再出现', !(un1.others || []).some((p) => p.name === 'unrelated-pkg'))
+
+const unSelf = await call('/dsh-cjgl/action', 'POST', JSON.stringify({ name: 'dsh-cjgl', action: 'uninstall' }))
+check('拒绝卸载管理器自身', unSelf.ok === false && /自身/.test(unSelf.error), unSelf.error)
+const unCore = await call('/dsh-cjgl/action', 'POST', JSON.stringify({ name: '@deepseek-ai/dsh-base', action: 'uninstall' }))
+check('拒绝卸载核心 bundle', unCore.ok === false && /核心/.test(unCore.error), unCore.error)
+
+console.log('\n[11] 重装')
+/* 造一个最小 tar.gz：package/package.json + package/lib/index.js */
+{
+  const zlib = await import('node:zlib')
+  function tarEntry(name, body) {
+    const header = Buffer.alloc(512)
+    header.write(name, 0, 100, 'utf8')
+    header.write('0000644\0', 100, 8, 'utf8')
+    header.write('0000000\0', 108, 8, 'utf8')
+    header.write('0000000\0', 116, 8, 'utf8')
+    header.write(body.length.toString(8).padStart(11, '0') + '\0', 124, 12, 'utf8')
+    header.write('00000000000\0', 136, 12, 'utf8')
+    header.write('        ', 148, 8, 'utf8')
+    header.write('0', 156, 1, 'utf8')
+    header.write('ustar\0', 257, 6, 'utf8')
+    header.write('00', 263, 2, 'utf8')
+    let sum = 0
+    for (let i = 0; i < 512; i++) sum += header[i]
+    header.write(sum.toString(8).padStart(6, '0') + '\0 ', 148, 8, 'utf8')
+    const pad = Buffer.alloc((512 - (body.length % 512)) % 512)
+    return Buffer.concat([header, body, pad])
+  }
+  const pkgJson = JSON.stringify({ name: 'unrelated-pkg', version: '9.9.9', description: '一个普通的工具插件' }, null, 2)
+  const raw = Buffer.concat([
+    tarEntry('package/package.json', Buffer.from(pkgJson, 'utf8')),
+    tarEntry('package/lib/index.js', Buffer.from('export default {}\n', 'utf8')),
+    Buffer.alloc(1024)
+  ])
+  const gz = zlib.gzipSync(raw)
+  const pkgDir = path.join(profile, 'dsh-home', 'packages')
+  fs.mkdirSync(pkgDir, { recursive: true })
+  fs.writeFileSync(path.join(pkgDir, 'unrelated-pkg-9.9.9.tgz'), gz)
+}
+
+const re1 = await call('/dsh-cjgl/action', 'POST', JSON.stringify({ name: 'unrelated-pkg', action: 'reinstall' }))
+check('重装成功', re1.ok === true, JSON.stringify(re1))
+check('从安装包解出', re1.detail === 'extracted', re1.detail)
+check('目录恢复', fs.existsSync(path.join(profile, 'node_modules', 'unrelated-pkg', 'package.json')))
+check('lib 也解出来了', fs.existsSync(path.join(profile, 'node_modules', 'unrelated-pkg', 'lib', 'index.js')))
+const afterRe = JSON.parse(fs.readFileSync(pkgPath, 'utf8'))
+check('依赖写回', /unrelated-pkg/.test(afterRe.dependencies['unrelated-pkg'] || ''))
+const re2 = await call('/dsh-cjgl/action', 'POST', JSON.stringify({ name: 'unrelated-pkg', action: 'reinstall' }))
+check('目录完好时只重新登记', re2.detail === 'linked', re2.detail)
+const badAction = await call('/dsh-cjgl/action', 'POST', JSON.stringify({ name: 'unrelated-pkg', action: 'nope' }))
+check('未知动作报错', badAction.ok === false && /未知动作/.test(badAction.error), badAction.error)
 
 const after = JSON.parse(fs.readFileSync(pkgPath, 'utf8'))
 check('写回后 bundles 合法', Array.isArray(after.dsh.profile.bundles) && after.dsh.profile.bundles.length > 0)
