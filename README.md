@@ -76,6 +76,28 @@ DSH 的**启动与插件管理器**（"cjgl" = 插件管理）。在设置页里
 | 名字白名单 | 只接受扫描出来的名字 |
 | 原子写入 | 先备份 `.bak`，再 `tmp + rename` |
 
+## 管理器版本下载
+
+管理器绑定自己的仓库 [`hanqi007/dsh-cjgl`](https://github.com/hanqi007/dsh-cjgl)，可以在面板里直接选版本下载：
+
+- 设置 →「启动与插件」→「管理器版本」→「读取仓库版本」
+- 会列出仓库 `dist/` 下所有 `dsh-cjgl-*.tgz`，按版本号倒序
+- 每行显示版本号、包大小；当前版本标「当前」
+- 点「下载」→ 从 GitHub 拉取该版本 → 写入 `~/.dsh/packages/` → 更新 `dependencies` 指向新包 → 解压覆盖自身
+
+接口：
+
+| 方法 | 路径 | 作用 |
+|---|---|---|
+| GET | `/dsh-cjgl/versions` | 列出仓库 dist 里的版本 |
+| POST | `/dsh-cjgl/install-version` | 下载并安装指定版本 |
+
+注意：
+
+- 安装的是**管理器自身**，覆盖当前文件，重启应用后生效
+- 下载源是 `raw.githubusercontent.com`，需要能访问该域
+- 只接受 `x.y.z` 格式的版本号
+
 ## 安装来源与重新下载
 
 管理器会在扫描时自动记下每个插件的**安装包路径**（`dependencies` 里的 `file:` 来源），存进 `~/.dsh/dsh-cjgl.json` 的 `sources`：
