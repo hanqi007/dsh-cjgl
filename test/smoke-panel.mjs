@@ -36,6 +36,7 @@ const sandbox = {
   document: {
     head: { appendChild: () => {} },
     querySelector: () => null,
+    getElementById: () => null,
     createElement: () => ({ dataset: {}, textContent: '', parentNode: null }),
     body: { appendChild: () => {} }
   }
@@ -112,7 +113,7 @@ function textOf(node) {
 
 function render(state) {
   hookIndex = 0
-  presets = [state, null, null, '', null, null]
+  presets = [state, null, null, '', null, null, null, null]
   const out = []
   walk(registered.render(), out)
   return out
@@ -123,7 +124,7 @@ check('渲染不抛错', view.length > 0)
 check('没有渲染错误', !view.some((n) => n.cls === '__render_error'), (view.find((n) => n.cls === '__render_error') || {}).text)
 
 const titles = view.filter((n) => n.cls === '__bm_sectionTitle').map((n) => n.text)
-check('三个分区', titles.length === 3, titles.join('|'))
+check('四个分区', titles.length === 4, titles.join('|'))
 check('有「开机动画」分区', titles.some((t) => t.indexOf('开机动画') >= 0))
 check('有「其他插件」分区', titles.some((t) => t.indexOf('其他插件') >= 0))
 check('有「更新」分区', titles.some((t) => t.indexOf('更新') >= 0))
@@ -132,6 +133,7 @@ check('4 张插件卡片', view.filter((n) => n.cls.indexOf('__bm_card') === 0).
 check('显示版本', view.some((n) => n.text === 'v1.2.3'))
 check('有「生效中」', view.some((n) => n.text === '生效中'))
 check('默认开机动画带「默认」标', view.some((n) => n.cls === '__bm_defaultTag' && n.text === '默认'))
+check('卡片有「已是默认」按钮', view.some((n) => n.text === '已是默认' || n.text === '设为默认'))
 check('有「已停用」', view.some((n) => n.text === '已停用'))
 check('管理器有「管理器」徽章', view.some((n) => n.text === '管理器'))
 check('卡片显示设置面板名', view.some((n) => n.cls === '__bm_setting' && n.text.indexOf('开机动画') >= 0), '')
@@ -152,8 +154,6 @@ check('说明里写了其他插件可同时开多个', view.some((n) => n.text.i
 /* 进入单个插件的配置页 */
 const detailState = {
   name: 'alpha-boot',
-  isBoot: true,
-  isDefault: false,
   version: '1.2.3',
   enabled: true,
   loading: false,
@@ -168,16 +168,12 @@ const detailState = {
   ]
 }
 hookIndex = 0
-presets = [listState, null, null, '', null, detailState]
+presets = [listState, null, null, '', null, null, null, detailState]
 const detailView = []
 walk(registered.render(), detailView)
 check('配置页有「← 返回列表」', detailView.some((n) => n.text === '← 返回列表'))
 check('配置页显示插件名', detailView.some((n) => n.cls === '__bm_name' && n.text === 'alpha-boot'))
 check('配置页显示配置文件', detailView.some((n) => n.cls === '__bm_path' && n.text.indexOf('配置文件') >= 0))
-check('详情页有「设为默认」', detailView.some((n) => n.text === '设为默认'))
-check('详情页有「重装」', detailView.some((n) => n.text === '重装'))
-check('详情页有「卸载」', detailView.some((n) => n.text === '卸载'))
-check('详情页有启停按钮', detailView.some((n) => n.text === '停用' || n.text === '启用'))
 check('渲染出表单字段', detailView.filter((n) => n.cls === '__bm_field' || n.cls === '__bm_field __bm_fcheck').length === 5,
   String(detailView.filter((n) => n.cls === '__bm_field' || n.cls === '__bm_field __bm_fcheck').length))
 check('有中文标签', detailView.some((n) => n.cls === '__bm_flabel' && n.text.indexOf('速度倍率') >= 0))

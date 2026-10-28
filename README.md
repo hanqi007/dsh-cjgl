@@ -76,27 +76,156 @@ DSH 的**启动与插件管理器**（"cjgl" = 插件管理）。在设置页里
 | 名字白名单 | 只接受扫描出来的名字 |
 | 原子写入 | 先备份 `.bak`，再 `tmp + rename` |
 
+## 管理器版本下载
+
+管理器绑定自己的仓库 [`hanqi007/dsh-cjgl`](https://github.com/hanqi007/dsh-cjgl)，可以在面板里直接选版本下载：
+
+- 设置 →「启动与插件」→「管理器版本」→「读取仓库版本」
+- 会列出仓库 `dist/` 下所有 `dsh-cjgl-*.tgz`，按版本号倒序
+- 每行显示版本号、包大小；当前版本标「当前」
+- 点「下载」→ 从 GitHub 拉取该版本 → 写入 `~/.dsh/packages/` → 更新 `dependencies` 指向新包 → 解压覆盖自身
+
+接口：
+
+| 方法 | 路径 | 作用 |
+|---|---|---|
+| GET | `/dsh-cjgl/versions` | 列出仓库 dist 里的版本 |
+| POST | `/dsh-cjgl/install-version` | 下载并安装指定版本 |
+
+注意：
+
+- 安装的是**管理器自身**，覆盖当前文件，重启应用后生效
+- 下载源是 `raw.githubusercontent.com`，需要能访问该域
+- 只接受 `x.y.z` 格式的版本号
+
+## 安装来源与重新下载
+
+管理器会在扫描时自动记下每个插件的**安装包路径**（`dependencies` 里的 `file:` 来源），存进 `~/.dsh/dsh-cjgl.json` 的 `sources`：
+
+```json
+{
+  "sources": {
+    "dsh-startup-screen": "C:/Users/hanlin/.dsh/packages/dsh-startup-screen-1.2.0.tgz",
+    "hdd-console-boot": "C:/Users/hanlin/.dsh/packages/hdd-console-boot-1.1.0.tgz"
+  }
+}
+```
+
+第一次发现某个插件时（`sources` 里还没有它），面板顶部会给出「**检测到新插件（来源已记录）**」提示，并为每个新插件提供一个「**重新下载 xxx**」按钮：
+
+- 点它 → 按记录的路径重新解压安装（相当于重装）
+- 不点 → 保持现状，记录仍然保留
+
+每个插件的详情里（点「管理」）也会显示「安装来源」路径，鼠标悬停可看完整路径。
+
+这样即使 `node_modules` 被清空、或者包文件被改坏，也能凭记录把插件恢复回来。
+
+## 兼容范围
+
+管理器尽量把所有「装着的东西」都列出来，而不是只认自己人：
+
+| 来源 | 是否列出 |
+|---|---|
+| `dependencies` 里的包 | ✅ |
+| `dsh.profile.bundles` 里出现、但没写进 dependencies 的包 | ✅（标 `仅 bundles`） |
+| 核心 bundle（dsh-base / dsh-web-app） | ❌ 受保护，不列 |
+| `node_modules` 里但既不在依赖也不在 bundles 的包 | ❌ 不列（避免把整棵依赖树列出来） |
+
+容错：
+
+- `package.json` 带 UTF-8 BOM 也能解析（读入时自动剥掉）
+- 解析失败或文件缺失的包仍会列出，标 `文件缺失`，可以卸载/重装但不能启用
+- 开机动画识别按包名（startup/splash/boot）与描述/关键词，不依赖固定包名
+
+## 重装插件
+
+每张插件卡片（**包括管理器自己**）都有「**重装**」按钮。行为：
+
+1. 从 `dependencies` 读该包的 `file:` 路径
+2. 删除 `node_modules/<包名>` 目录
+3. 用 `tar -xzf` 把 tgz 解压到临时目录，再把 `package/` 移入 `node_modules/<包名>`
+4. 重新读取装好的版本号返回
+
+适用场景：包文件被改坏、想恢复官方原版、或者切换版本后想强制刷新。
+
+注意：
+
+- 只支持 `file:` 形式的依赖（本地上传的 tgz），不支持 npm 仓库形式的包
+- 重装**不会**改 `package.json` 的依赖声明、也不会动 `bundles`
+- 重装管理器自身时，正在运行的代码在内存里不受影响，重启后才会用新文件
+
+## 卸载插件
+
+每张插件卡片右下角（「管理」旁边）有「**卸载**」按钮，点击后二次确认，然后：
+
+1. 从 `dependencies` 移除该包
+2. 从 `dsh.profile.bundles` 移除
+3. 删除 `node_modules/<包名>` 目录
+4. 删除 `pnpm-lock.yaml`（下次安装时由 pnpm 重建）
+
+写回前备份 `package.json.bak`，写入仍是 tmp + rename。
+
+保护规则：
+
+| 对象 | 结果 |
+|---|---|
+| 核心 bundle（dsh-base / dsh-web-app） | 拒绝 |
+| 管理器自身（dsh-cjgl） | 拒绝 |
+| 不在扫描列表里的名字 | 拒绝 |
+
+删除后需要**重启应用**才彻底生效（运行中的模块不会立即卸载）。
+
+## 插件健康检查
+
+设置页底部有「检查」按钮，点击调用 `GET /dsh-cjgl/check`，逐个插件核对：
+
+| 检查项 | 说明 |
+|---|---|
+| 包目录 | `node_modules/<name>` 是否存在 |
+| package.json | 能否解析 |
+| 配置文件 | JSON 是否损坏（未创建则标注「使用默认值」） |
+| 已启用 | 是否在 bundles 里 |
+
+报告会列出每个插件的结果，并对「多个开机动画同时启用」「核心 bundle 缺失」给出告警。
+
+## 新开机动画默认不启用
+
+`dsh plugin add` 会把新装的开机动画写进 `dsh.profile.bundles`，导致它自动抢首屏。管理器对此做了两件事：
+
+- **默认停用**：打开管理器时，凡是不在 `confirmedBoots` 名单里的开机动画，都会被自动移出 bundles，并在面板顶部提示「已自动停用新检测到的开机动画：xxx」
+- **手动确认**：点面板里的「使用 xxx」按钮，才会把它登记进 `confirmedBoots` 并启用（其他开机动画自动停用）
+
+配置项 `autoEnableNewBoot`（默认 `false`）控制这个策略；改成 `true` 就回到「装了什么就启用什么」的原生行为。
+
+`~/.dsh/dsh-cjgl.json`：
+
+```json
+{
+  "autoUpdate": false,
+  "confirmedBoots": [],
+  "autoEnableNewBoot": false
+}
+```
+
+接口：
+
+| 方法 | 路径 | 作用 |
+|---|---|---|
+| GET | `/dsh-cjgl/list` | 扫描插件、返回状态（并执行默认停用） |
+| GET | `/dsh-cjgl/check` | 健康检查报告 |
+| POST | `/dsh-cjgl/confirm-boot` | 确认使用某个开机动画 |
+| POST | `/dsh-cjgl/toggle` | 启用 / 停用 |
+| POST | `/dsh-cjgl/config` | 读写管理器配置 |
+| GET | `/dsh-cjgl/update` | 检查管理器自身更新 |
+
 ## 默认开机动画
 
-开机动画之间互斥，但你可以指定一个**默认**的：
+开机动画之间互斥，可以指定一个**默认**的：
 
-- 任意开机动画的「管理」页里点 **设为默认**，卡片上会出现「默认」标
-- 配置存在 `~/.dsh/dsh-cjgl.json` 的 `defaultBoot` 字段
+- 任意开机动画的卡片或「管理」页点 **设为默认**，卡片上出现「默认」标
+- 存在 `~/.dsh/dsh-cjgl.json` 的 `defaultBoot`
 - 默认项被卸载时自动清空
-- 「设为默认」只改标记，不会自动启用——启用仍然走「启用」按钮（互斥规则不变）
-
-## 重装与卸载
-
-「管理」页顶部四个操作：启用/停用、设为默认、**重装**、**卸载**。
-
-| 操作 | 做了什么 |
-|---|---|
-| 重装 | 目录完好 → 只把依赖重新登记回 `package.json`；目录缺失 → 从 `~/.dsh/packages/<name>-<ver>.tgz` 解出（内置 tgz 解析，不依赖 pnpm / 网络） |
-| 卸载 | 从 `dependencies` 与 `bundles` 移除，并**删除** `node_modules/<name>` 目录；二次确认后才执行 |
-
-保护：核心 bundle（`dsh-base` / `dsh-web-app`）与管理器自身不能卸载。
-
-两个操作都写 `package.json.bak` 备份，改完提示重启。
+- 只做标记，不自动启用（互斥规则不变）
 
 ## 自动更新（默认关闭）
 
@@ -109,9 +238,9 @@ DSH 的**启动与插件管理器**（"cjgl" = 插件管理）。在设置页里
 ## 安装
 
 ```bash
-dsh plugin --profile desktop add ./dsh-cjgl-2.2.1.tgz
+dsh plugin --profile desktop add ./dsh-cjgl-2.0.0.tgz
 # 或 web profile
-dsh plugin --profile web add ./dsh-cjgl-2.2.1.tgz
+dsh plugin --profile web add ./dsh-cjgl-2.0.0.tgz
 ```
 
 装完重启应用，设置页会多出「启动与插件」。
@@ -133,7 +262,7 @@ node test/smoke-host.mjs    # 扫描两类 / 互斥 / 其他插件可多开 / �
 node test/smoke-panel.mjs   # 面板：三分区 / 卡片 / 管理按钮展开详情 / 空态 / 警告
 ```
 
-当前全绿：75 + 41 = 116 项。
+当前全绿：55 + 36 = 91 项。
 
 ## License
 
