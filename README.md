@@ -76,6 +76,28 @@ DSH 的**启动与插件管理器**（"cjgl" = 插件管理）。在设置页里
 | 名字白名单 | 只接受扫描出来的名字 |
 | 原子写入 | 先备份 `.bak`，再 `tmp + rename` |
 
+## 安装来源与重新下载
+
+管理器会在扫描时自动记下每个插件的**安装包路径**（`dependencies` 里的 `file:` 来源），存进 `~/.dsh/dsh-cjgl.json` 的 `sources`：
+
+```json
+{
+  "sources": {
+    "dsh-startup-screen": "C:/Users/hanlin/.dsh/packages/dsh-startup-screen-1.2.0.tgz",
+    "hdd-console-boot": "C:/Users/hanlin/.dsh/packages/hdd-console-boot-1.1.0.tgz"
+  }
+}
+```
+
+第一次发现某个插件时（`sources` 里还没有它），面板顶部会给出「**检测到新插件（来源已记录）**」提示，并为每个新插件提供一个「**重新下载 xxx**」按钮：
+
+- 点它 → 按记录的路径重新解压安装（相当于重装）
+- 不点 → 保持现状，记录仍然保留
+
+每个插件的详情里（点「管理」）也会显示「安装来源」路径，鼠标悬停可看完整路径。
+
+这样即使 `node_modules` 被清空、或者包文件被改坏，也能凭记录把插件恢复回来。
+
 ## 兼容范围
 
 管理器尽量把所有「装着的东西」都列出来，而不是只认自己人：
