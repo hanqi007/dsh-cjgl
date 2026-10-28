@@ -145,7 +145,7 @@ check('可以关回去', cfg3.config.autoUpdate === false)
 console.log('\n[7] 更新接口（网络失败也是正常返回）')
 const upd = await call('/dsh-cjgl/update', 'GET')
 check('返回带 current', typeof upd.current === 'string' && upd.current.length > 0, JSON.stringify(upd).slice(0, 120))
-check('带 repo 信息', upd.repo === 'hanqi007/dsh-hdd')
+check('带 repo 信息', upd.repo === 'hanqi007/dsh-cjgl')
 
 console.log('\n[8] 独立配置读写')
 const one = await call('/dsh-cjgl/settings?name=hdd-console-boot', 'GET')

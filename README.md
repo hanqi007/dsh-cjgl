@@ -87,9 +87,9 @@ DSH 的**启动与插件管理器**（"cjgl" = 插件管理）。在设置页里
 ## 安装
 
 ```bash
-dsh plugin --profile desktop add ./dsh-cjgl-2.0.0.tgz
+dsh plugin --profile desktop add ./dsh-cjgl-2.2.1.tgz
 # 或 web profile
-dsh plugin --profile web add ./dsh-cjgl-2.0.0.tgz
+dsh plugin --profile web add ./dsh-cjgl-2.2.1.tgz
 ```
 
 装完重启应用，设置页会多出「启动与插件」。
