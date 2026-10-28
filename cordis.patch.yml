@@ -1,0 +1,12 @@
+# dsh-cjgl — DSH bundle patch
+#
+# 把管理器挂进当前 profile 的配置树；Web 半侧由 dsh.client 声明，
+# 宿主按 package.json 的 dsh.client 自动组装 bundle。
+#
+# 安装：
+#   dsh plugin --profile desktop add ./dsh-cjgl-1.0.0.tgz
+# 本地开发：
+#   dsh plugin --profile desktop add link:D:\xm\deepseek\boot-manager
+- insert:
+    - id: dsh-cjgl
+      name: dsh-cjgl

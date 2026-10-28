@@ -1,0 +1,47 @@
+{
+  "name": "dsh-cjgl",
+  "version": "2.2.0",
+  "description": "DSH 启动与插件管理器（dsh-cjgl）：列出当前 profile 里的开机动画与其他插件，一键启用/停用。开机动画自动互斥（同时只让一个生效，避免多个首屏注入打架），其他插件各自独立开关；核心 bundle 与管理器自身受保护。",
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "boot",
+    "splash",
+    "startup",
+    "manager"
+  ],
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "test",
+    "cordis.patch.yml",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "node test/smoke-host.mjs && node test/smoke-panel.mjs"
+  },
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-settings"
+      ],
+      "platform": "web"
+    }
+  },
+  "author": "hanqi007"
+}
