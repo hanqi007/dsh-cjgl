@@ -14,6 +14,7 @@ function check(name, ok, detail) {
 
 let hookIndex = 0
 let presets = []
+let fetchCalls = []
 function createElement(type, props) {
   var children = Array.prototype.slice.call(arguments, 2)
   return { type, props: props || {}, children }
@@ -32,6 +33,7 @@ const sandbox = {
   console,
   JSON, Object, Array, String, Number, Boolean, Math, Date, RegExp, Error, Symbol,
   setTimeout,
+  fetch: function (url) { fetchCalls.push(String(url)); return Promise.reject(new Error('offline in test')) },
   window: { __ModuleLoader__: { load(options) { factory = options.factory } } },
   document: {
     head: { appendChild: () => {} },
@@ -97,7 +99,7 @@ function walk(node, out) {
     return
   }
   if (node.props && typeof node.props.className === 'string') {
-    out.push({ cls: node.props.className, text: textOf(node) })
+    out.push({ cls: node.props.className, text: textOf(node), props: node.props })
   }
   ;(node.children || []).forEach((c) => walk(c, out))
 }
@@ -134,6 +136,23 @@ check('显示版本', view.some((n) => n.text === 'v1.2.3'))
 check('有「生效中」', view.some((n) => n.text === '生效中'))
 check('默认开机动画带「默认」标', view.some((n) => n.cls === '__bm_defaultTag' && n.text === '默认'))
 check('卡片有「已是默认」按钮', view.some((n) => n.text === '已是默认' || n.text === '设为默认'))
+
+/* 设为默认 / 启用 必须真的发请求（曾把设为默认绑成 onManage.default，点了没反应） */
+const plainView = render(Object.assign({}, listState, { config: { autoUpdate: false, defaultBoot: '' } }))
+const defaultBtn = plainView.find((n) => n.text === '设为默认' && n.props && n.props.onClick)
+check('找得到「设为默认」按钮的回调', !!defaultBtn)
+if (defaultBtn) {
+  fetchCalls = []
+  defaultBtn.props.onClick()
+  check('设为默认按钮会发请求', fetchCalls.some((u) => u.indexOf('/default-boot') >= 0), JSON.stringify(fetchCalls))
+}
+const enableBtn = plainView.find((n) => n.text === '启用' && n.props && n.props.onClick)
+check('找得到「启用」按钮的回调', !!enableBtn)
+if (enableBtn) {
+  fetchCalls = []
+  enableBtn.props.onClick()
+  check('启用按钮会发请求', fetchCalls.some((u) => u.indexOf('/toggle') >= 0), JSON.stringify(fetchCalls))
+}
 check('有「已停用」', view.some((n) => n.text === '已停用'))
 check('管理器有「管理器」徽章', view.some((n) => n.text === '管理器'))
 check('卡片显示设置面板名', view.some((n) => n.cls === '__bm_setting' && n.text.indexOf('开机动画') >= 0), '')

@@ -177,6 +177,19 @@ check('非开机动画不能设为默认', badD.ok === false && /不是扫描到
 const clearD = await call('/dsh-cjgl/default-boot', 'POST', JSON.stringify({ name: '' }))
 check('可以清空默认', clearD.ok === true && clearD.config.defaultBoot === '')
 
+console.log('\n[10] 启用即确认（不再被自动停用）')
+await call('/dsh-cjgl/toggle', 'POST', JSON.stringify({ name: 'hdd-console-boot', enabled: false }))
+const onBoot = await call('/dsh-cjgl/toggle', 'POST', JSON.stringify({ name: 'hdd-console-boot', enabled: true }))
+check('启用成功', onBoot.ok === true)
+const cfgAfterOn = await call('/dsh-cjgl/config', 'GET')
+check('已记入 confirmedBoots', (cfgAfterOn.config.confirmedBoots || []).indexOf('hdd-console-boot') !== -1,
+  JSON.stringify(cfgAfterOn.config.confirmedBoots))
+const listAfterOn = await call('/dsh-cjgl/list', 'GET')
+const bootAfterOn = (listAfterOn.boots || []).find((b) => b.name === 'hdd-console-boot')
+check('/list 不会把它自动停用', !!bootAfterOn && bootAfterOn.enabled === true, JSON.stringify(bootAfterOn))
+check('autoDisabled 里没有它', (listAfterOn.autoDisabled || []).indexOf('hdd-console-boot') === -1,
+  JSON.stringify(listAfterOn.autoDisabled))
+
 const after = JSON.parse(fs.readFileSync(pkgPath, 'utf8'))
 check('写回后 bundles 合法', Array.isArray(after.dsh.profile.bundles) && after.dsh.profile.bundles.length > 0)
 check('dependencies 未被动', Object.keys(after.dependencies).length === Object.keys(pkgs).length)
