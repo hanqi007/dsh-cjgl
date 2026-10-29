@@ -76,7 +76,7 @@ const listState = {
   config: { autoUpdate: false, defaultBoot: 'alpha-boot' },
   protected: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app'],
   boots: [
-    { name: 'alpha-boot', version: '1.2.3', description: 'HDD 控制台开机动画', settingsLabel: '开机动画', enabled: true },
+    { name: 'alpha-boot', version: '1.2.3', installedAt: '2026-10-29T15:04:05.000Z', description: 'HDD 控制台开机动画', settingsLabel: '开机动画', enabled: true },
     { name: 'beta-startup', version: '2.0.0', description: '另一个启动界面与启动动画插件', enabled: false }
   ],
   others: [
@@ -136,6 +136,7 @@ check('有「更新」分区', titles.some((t) => t.indexOf('更新') >= 0))
 check('4 张插件卡片', view.filter((n) => n.cls.indexOf('__bm_card') === 0).length === 4, String(view.filter((n) => n.cls.indexOf('__bm_card') === 0).length))
 check('显示版本', view.some((n) => n.text === 'v1.2.3'))
 check('有「生效中」', view.some((n) => n.text === '生效中'))
+check('卡片显示安装时间', view.some((n) => n.cls === '__bm_setting' && n.text.indexOf('安装于') >= 0))
 check('默认开机动画带「默认」标', view.some((n) => n.cls === '__bm_defaultTag' && n.text === '默认'))
 
 /* 自动检查命中新版本 → 弹窗询问 */

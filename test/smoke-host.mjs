@@ -194,6 +194,15 @@ console.log('\n[11] 安全公告通道')
 const hostSrc = fs.readFileSync(path.join('lib', 'index.js'), 'utf8')
 check('指向 zjhqgx 仓库', hostSrc.indexOf("SECURITY_REPO = 'hanqi007/zjhqgx'") !== -1)
 
+console.log('\n[12] 安装时间')
+const listAt = await call('/dsh-cjgl/list', 'GET')
+const firstBoot = (listAt.boots || [])[0]
+check('插件带 installedAt', !!firstBoot && /^\d{4}-\d{2}-\d{2}T/.test(firstBoot.installedAt || ''),
+  JSON.stringify(firstBoot && firstBoot.installedAt))
+const selfItem = (listAt.others || []).find((p) => p.self)
+check('管理器自身也带 installedAt', !!selfItem && /^\d{4}-\d{2}-\d{2}T/.test(selfItem.installedAt || ''),
+  JSON.stringify(selfItem && selfItem.installedAt))
+
 const after = JSON.parse(fs.readFileSync(pkgPath, 'utf8'))
 check('写回后 bundles 合法', Array.isArray(after.dsh.profile.bundles) && after.dsh.profile.bundles.length > 0)
 check('dependencies 未被动', Object.keys(after.dependencies).length === Object.keys(pkgs).length)
