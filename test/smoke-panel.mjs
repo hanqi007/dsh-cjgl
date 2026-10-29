@@ -36,6 +36,8 @@ const sandbox = {
   fetch: function (url) { fetchCalls.push(String(url)); return Promise.reject(new Error('offline in test')) },
   window: { __ModuleLoader__: { load(options) { factory = options.factory } } },
   document: {
+    addEventListener: () => {},
+    removeEventListener: () => {},
     head: { appendChild: () => {} },
     querySelector: () => null,
     getElementById: () => null,
@@ -74,7 +76,7 @@ const listState = {
   config: { autoUpdate: false, defaultBoot: 'alpha-boot' },
   protected: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app'],
   boots: [
-    { name: 'alpha-boot', version: '1.2.3', description: 'HDD 控制台开机动画', settingsLabel: '开机动画', enabled: true },
+    { name: 'alpha-boot', version: '1.2.3', installedAt: '2026-10-29T15:04:05.000Z', description: 'HDD 控制台开机动画', settingsLabel: '开机动画', enabled: true },
     { name: 'beta-startup', version: '2.0.0', description: '另一个启动界面与启动动画插件', enabled: false }
   ],
   others: [
@@ -115,7 +117,7 @@ function textOf(node) {
 
 function render(state) {
   hookIndex = 0
-  presets = [state, null, null, '', null, null, null, null, null]
+  presets = [state, null, null, '', null, null, null, null, '', null, null]
   const out = []
   walk(registered.render(), out)
   return out
@@ -126,7 +128,7 @@ check('渲染不抛错', view.length > 0)
 check('没有渲染错误', !view.some((n) => n.cls === '__render_error'), (view.find((n) => n.cls === '__render_error') || {}).text)
 
 const titles = view.filter((n) => n.cls === '__bm_sectionTitle').map((n) => n.text)
-check('四个分区', titles.length === 4, titles.join('|'))
+check('七个分区', titles.length === 7, titles.join('|'))
 check('有「开机动画」分区', titles.some((t) => t.indexOf('开机动画') >= 0))
 check('有「其他插件」分区', titles.some((t) => t.indexOf('其他插件') >= 0))
 check('有「更新」分区', titles.some((t) => t.indexOf('更新') >= 0))
@@ -134,11 +136,12 @@ check('有「更新」分区', titles.some((t) => t.indexOf('更新') >= 0))
 check('4 张插件卡片', view.filter((n) => n.cls.indexOf('__bm_card') === 0).length === 4, String(view.filter((n) => n.cls.indexOf('__bm_card') === 0).length))
 check('显示版本', view.some((n) => n.text === 'v1.2.3'))
 check('有「生效中」', view.some((n) => n.text === '生效中'))
+check('卡片显示安装时间', view.some((n) => n.cls === '__bm_setting' && n.text.indexOf('安装于') >= 0))
 check('默认开机动画带「默认」标', view.some((n) => n.cls === '__bm_defaultTag' && n.text === '默认'))
 
 /* 自动检查命中新版本 → 弹窗询问 */
 hookIndex = 0
-presets = [listState, null, null, '', null, null, null, null, { latest: '9.9.9', current: '3.0.5' }]
+presets = [listState, null, null, '', null, null, null, null, '', null, { latest: '9.9.9', current: '3.0.5' }]
 const modalView = []
 walk(registered.render(), modalView)
 check('弹窗出现', modalView.some((n) => n.cls === '__bm_modal'))
@@ -155,7 +158,7 @@ if (installBtn) {
 
 /* 安全公告弹窗：标题变「安全补丁」，显示公告编号与修复版本 */
 hookIndex = 0
-presets = [listState, null, null, '', null, null, null, null, {
+presets = [listState, null, null, '', null, null, null, null, '', null, {
   kind: 'security',
   latest: '3.1.0',
   current: '3.0.5',
@@ -188,7 +191,7 @@ check('有「已停用」', view.some((n) => n.text === '已停用'))
 check('管理器有「管理器」徽章', view.some((n) => n.text === '管理器'))
 check('卡片显示设置面板名', view.some((n) => n.cls === '__bm_setting' && n.text.indexOf('开机动画') >= 0), '')
 
-check('管理器按钮显示「不可停用」', view.some((n) => n.text === '不可停用'))
+check('管理器按钮显示「不可停用」', view.some((n) => n.text.indexOf('不可停用') >= 0))
 check('有「停用」按钮', view.some((n) => n.text === '停用'))
 check('有「启用」按钮', view.some((n) => n.text === '启用'))
 check('有「刷新」按钮', view.some((n) => n.text === '刷新'))
@@ -218,7 +221,7 @@ const detailState = {
   ]
 }
 hookIndex = 0
-presets = [listState, null, null, '', null, null, null, detailState, null]
+presets = [listState, null, null, '', null, null, null, null, '', detailState, null]
 const detailView = []
 walk(registered.render(), detailView)
 check('配置页有「← 返回列表」', detailView.some((n) => n.text === '← 返回列表'))
