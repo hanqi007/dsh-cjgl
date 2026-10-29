@@ -162,6 +162,20 @@ check('compat 有 nodeMajor', typeof health.compat.nodeMajor === 'number')
 check('compat 给结论', typeof health.compat.ok === 'boolean')
 check('缺能力时有提示', health.compat.ok === true ? health.compat.note === '' : health.compat.note.length > 10)
 
+console.log('\n[6.9] 完整性自检')
+check('health 带 integrity', !!health.integrity, JSON.stringify(health.integrity && health.integrity.summary))
+const integ = health.integrity || {}
+check('自身有结论', !!integ.self && typeof integ.self.ok === 'boolean')
+check('自身检查 6 个关键文件', Array.isArray(integ.self.problems) && integ.self.ok === true, JSON.stringify(integ.self.problems))
+check('插件列表是数组', Array.isArray(integ.plugins))
+check('summary 有统计', !!integ.summary && typeof integ.summary.total === 'number' && typeof integ.summary.broken === 'number')
+/* 测试环境没有真实 node_modules，所以插件都会被判成缺文件——这本身就是要验证的行为 */
+const broken = (integ.plugins || []).filter((x) => !x.ok)
+check('缺文件的插件能被识别', broken.length > 0, 'broken=' + broken.length)
+check('每个坏插件都带原因', broken.every((x) => Array.isArray(x.problems) && x.problems.length > 0), JSON.stringify(broken[0]))
+check('插件带 installed 标记', (integ.plugins || []).every((x) => typeof x.installed === 'boolean'))
+check('插件带 enabled 标记', (integ.plugins || []).every((x) => typeof x.enabled === 'boolean'))
+
 console.log('\n[7] 更新接口（网络失败也是正常返回）')
 const upd = await call('/dsh-cjgl/update', 'GET')
 check('返回带 current', typeof upd.current === 'string' && upd.current.length > 0, JSON.stringify(upd).slice(0, 120))
