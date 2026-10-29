@@ -143,6 +143,15 @@ check('写到了 DSH_HOME 下的文件', fs.existsSync(path.join(profile, 'dsh-h
 const cfg3 = await call('/dsh-cjgl/config', 'POST', JSON.stringify({ autoUpdate: false }))
 check('可以关回去', cfg3.config.autoUpdate === false)
 
+console.log('\n[6.5] 首次安装自动对齐最新版')
+const bootSrc = fs.readFileSync(new URL('../lib/index.js', import.meta.url), 'utf8')
+check('有版本比较函数', bootSrc.indexOf('function cmpVersion') !== -1)
+check('有首次引导逻辑', bootSrc.indexOf('async function bootstrapLatest') !== -1)
+check('引导会查最新版本', bootSrc.indexOf('const list = await listVersions()') !== -1)
+check('引导有一次性标记', bootSrc.indexOf('cfg.bootstrapVersion') !== -1)
+check('引导只在首次跑', bootSrc.indexOf('if (cfg.bootstrapVersion) return null') !== -1)
+check('apply 里挂了延迟触发', bootSrc.indexOf('bootstrapLatest(ctx).catch') !== -1)
+
 console.log('\n[7] 更新接口（网络失败也是正常返回）')
 const upd = await call('/dsh-cjgl/update', 'GET')
 check('返回带 current', typeof upd.current === 'string' && upd.current.length > 0, JSON.stringify(upd).slice(0, 120))
