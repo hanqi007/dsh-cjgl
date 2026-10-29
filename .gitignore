@@ -1,6 +1,0 @@
-.tools/
-.shots/
-node_modules/
-*.log
-*.bak
-*.tmp
