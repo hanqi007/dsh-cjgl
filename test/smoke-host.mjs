@@ -152,6 +152,16 @@ check('引导有一次性标记', bootSrc.indexOf('cfg.bootstrapVersion') !== -1
 check('引导只在首次跑', bootSrc.indexOf('if (cfg.bootstrapVersion) return null') !== -1)
 check('apply 里挂了延迟触发', bootSrc.indexOf('bootstrapLatest(ctx).catch') !== -1)
 
+console.log('\n[6.8] 运行环境兼容性自检')
+const health = await call('/dsh-cjgl/check', 'GET')
+check('health 带 compat', !!health.compat, JSON.stringify(health.compat))
+check('compat 有 node 版本', typeof health.compat.node === 'string' && health.compat.node.length > 0, health.compat.node)
+check('compat 判断 fetch', typeof health.compat.fetch === 'boolean')
+check('compat 判断 abortController', typeof health.compat.abortController === 'boolean')
+check('compat 有 nodeMajor', typeof health.compat.nodeMajor === 'number')
+check('compat 给结论', typeof health.compat.ok === 'boolean')
+check('缺能力时有提示', health.compat.ok === true ? health.compat.note === '' : health.compat.note.length > 10)
+
 console.log('\n[7] 更新接口（网络失败也是正常返回）')
 const upd = await call('/dsh-cjgl/update', 'GET')
 check('返回带 current', typeof upd.current === 'string' && upd.current.length > 0, JSON.stringify(upd).slice(0, 120))
