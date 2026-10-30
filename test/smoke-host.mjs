@@ -66,11 +66,11 @@ const ctx = {
 }
 mod.apply(ctx)
 const byPath = Object.fromEntries(routes.map((r) => [r.path, r]))
-check('注册了 16 条路由', routes.length === 16, String(routes.length))
+check('注册了 17 条路由', routes.length === 17, String(routes.length))
 check('有 /dsh-cjgl/list', !!byPath['/dsh-cjgl/list'])
 check('有 /dsh-cjgl/toggle', !!byPath['/dsh-cjgl/toggle'])
 check('有 /dsh-cjgl/config', !!byPath['/dsh-cjgl/config'])
-check('有 /dsh-cjgl/update', !!byPath['/dsh-cjgl/update'])
+check('有 /dsh-cjgl/update', !!byPath['/dsh-cjgl/update', '/dsh-cjgl/scan'])
 check('有 /dsh-cjgl/settings', !!byPath['/dsh-cjgl/settings'])
 check('有 /dsh-cjgl/default-boot', !!byPath['/dsh-cjgl/default-boot'])
 
@@ -176,8 +176,16 @@ check('每个坏插件都带原因', broken.every((x) => Array.isArray(x.problem
 check('插件带 installed 标记', (integ.plugins || []).every((x) => typeof x.installed === 'boolean'))
 check('插件带 enabled 标记', (integ.plugins || []).every((x) => typeof x.enabled === 'boolean'))
 
+console.log('\n[6.95] 运行时密钥扫描')
+const scan0 = await call('/dsh-cjgl/scan', 'GET')
+check('扫描接口可用', scan0.ok === true, JSON.stringify(scan0).slice(0, 100))
+check('返回扫描文件数', typeof scan0.scanned === 'number', String(scan0.scanned))
+check('返回 findings 数组', Array.isArray(scan0.findings))
+check('返回结论文案', typeof scan0.note === 'string' && scan0.note.length > 0, scan0.note)
+check('health 带 secrets 摘要', !!health.secrets, JSON.stringify(health.secrets))
+
 console.log('\n[7] 更新接口（网络失败也是正常返回）')
-const upd = await call('/dsh-cjgl/update', 'GET')
+const upd = await call('/dsh-cjgl/update', '/dsh-cjgl/scan', 'GET')
 check('返回带 current', typeof upd.current === 'string' && upd.current.length > 0, JSON.stringify(upd).slice(0, 120))
 check('带 repo 信息', upd.repo === 'hanqi007/dsh-cjgl')
 
