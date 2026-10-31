@@ -66,11 +66,11 @@ const ctx = {
 }
 mod.apply(ctx)
 const byPath = Object.fromEntries(routes.map((r) => [r.path, r]))
-check('注册了 17 条路由', routes.length === 17, String(routes.length))
+check('注册了 18 条路由', routes.length === 18, String(routes.length))
 check('有 /dsh-cjgl/list', !!byPath['/dsh-cjgl/list'])
 check('有 /dsh-cjgl/toggle', !!byPath['/dsh-cjgl/toggle'])
 check('有 /dsh-cjgl/config', !!byPath['/dsh-cjgl/config'])
-check('有 /dsh-cjgl/update', !!byPath['/dsh-cjgl/update', '/dsh-cjgl/scan'])
+check('有 /dsh-cjgl/update', !!byPath['/dsh-cjgl/update', '/dsh-cjgl/scan', '/dsh-cjgl/boot'])
 check('有 /dsh-cjgl/settings', !!byPath['/dsh-cjgl/settings'])
 check('有 /dsh-cjgl/default-boot', !!byPath['/dsh-cjgl/default-boot'])
 
@@ -183,6 +183,19 @@ check('返回扫描文件数', typeof scan0.scanned === 'number', String(scan0.s
 check('返回 findings 数组', Array.isArray(scan0.findings))
 check('返回结论文案', typeof scan0.note === 'string' && scan0.note.length > 0, scan0.note)
 check('health 带 secrets 摘要', !!health.secrets, JSON.stringify(health.secrets))
+
+console.log('\n[6.96] 开机动画检测')
+const boot0 = await call('/dsh-cjgl/boot', 'GET')
+check('开机动画接口可用', boot0.ok === true, JSON.stringify(boot0).slice(0, 100))
+check('返回插件列表', Array.isArray(boot0.plugins), String((boot0.plugins || []).length))
+check('返回当前默认', typeof boot0.current === 'string', boot0.current)
+check('返回冲突标记', typeof boot0.conflict === 'boolean')
+check('返回启用数量', typeof boot0.enabledCount === 'number', String(boot0.enabledCount))
+check('返回结论文案', typeof boot0.note === 'string' && boot0.note.length > 0, boot0.note)
+const repair0 = await call('/dsh-cjgl/boot', 'POST', JSON.stringify({ action: 'repair' }))
+check('冲突修复接口可用', repair0.ok === true, JSON.stringify(repair0).slice(0, 100))
+const badAction = await call('/dsh-cjgl/boot', 'POST', JSON.stringify({ action: 'nope' }))
+check('未知动作报错', badAction.ok === false && /未知/.test(badAction.error), badAction.error)
 
 console.log('\n[7] 更新接口（网络失败也是正常返回）')
 const upd = await call('/dsh-cjgl/update', '/dsh-cjgl/scan', 'GET')
