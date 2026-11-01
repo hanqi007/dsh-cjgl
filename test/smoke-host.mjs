@@ -66,11 +66,11 @@ const ctx = {
 }
 mod.apply(ctx)
 const byPath = Object.fromEntries(routes.map((r) => [r.path, r]))
-check('注册了 19 条路由', routes.length === 19, String(routes.length))
+check('注册了 21 条路由', routes.length === 21, String(routes.length))
 check('有 /dsh-cjgl/list', !!byPath['/dsh-cjgl/list'])
 check('有 /dsh-cjgl/toggle', !!byPath['/dsh-cjgl/toggle'])
 check('有 /dsh-cjgl/config', !!byPath['/dsh-cjgl/config'])
-check('有 /dsh-cjgl/update', !!byPath['/dsh-cjgl/update', '/dsh-cjgl/scan', '/dsh-cjgl/boot', '/dsh-cjgl/audit'])
+check('有 /dsh-cjgl/update', !!byPath['/dsh-cjgl/update', '/dsh-cjgl/scan', '/dsh-cjgl/boot', '/dsh-cjgl/audit', '/dsh-cjgl/doctor', '/dsh-cjgl/backups'])
 check('有 /dsh-cjgl/settings', !!byPath['/dsh-cjgl/settings'])
 check('有 /dsh-cjgl/default-boot', !!byPath['/dsh-cjgl/default-boot'])
 
@@ -202,6 +202,15 @@ const audit0 = await call('/dsh-cjgl/audit?name=' + encodeURIComponent('alpha-bo
 check('审核接口可用', typeof audit0.ok === 'boolean', JSON.stringify(audit0).slice(0, 90))
 const auditNo = await call('/dsh-cjgl/audit?name=nope', 'GET')
 check('不存在的插件报错', auditNo.ok === false && /没有这个插件/.test(auditNo.error), auditNo.error)
+
+console.log('\n[6.98] 环境诊断与备份')
+const doc = await call('/dsh-cjgl/doctor', 'GET')
+check('诊断接口可用', doc.ok === true && Array.isArray(doc.items), JSON.stringify(doc).slice(0, 90))
+check('诊断有检查项', (doc.items || []).length >= 5, String((doc.items || []).length))
+const bk0 = await call('/dsh-cjgl/backups', 'GET')
+check('备份列表可用', bk0.ok === true && Array.isArray(bk0.backups), JSON.stringify(bk0).slice(0, 80))
+const bk1 = await call('/dsh-cjgl/backups', 'POST', JSON.stringify({ label: 'test' }))
+check('能创建备份', bk1.ok === true && bk1.files > 0, JSON.stringify(bk1).slice(0, 80))
 
 console.log('\n[7] 更新接口（网络失败也是正常返回）')
 const upd = await call('/dsh-cjgl/update', '/dsh-cjgl/scan', 'GET')
