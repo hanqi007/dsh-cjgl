@@ -66,11 +66,11 @@ const ctx = {
 }
 mod.apply(ctx)
 const byPath = Object.fromEntries(routes.map((r) => [r.path, r]))
-check('注册了 18 条路由', routes.length === 18, String(routes.length))
+check('注册了 19 条路由', routes.length === 19, String(routes.length))
 check('有 /dsh-cjgl/list', !!byPath['/dsh-cjgl/list'])
 check('有 /dsh-cjgl/toggle', !!byPath['/dsh-cjgl/toggle'])
 check('有 /dsh-cjgl/config', !!byPath['/dsh-cjgl/config'])
-check('有 /dsh-cjgl/update', !!byPath['/dsh-cjgl/update', '/dsh-cjgl/scan', '/dsh-cjgl/boot'])
+check('有 /dsh-cjgl/update', !!byPath['/dsh-cjgl/update', '/dsh-cjgl/scan', '/dsh-cjgl/boot', '/dsh-cjgl/audit'])
 check('有 /dsh-cjgl/settings', !!byPath['/dsh-cjgl/settings'])
 check('有 /dsh-cjgl/default-boot', !!byPath['/dsh-cjgl/default-boot'])
 
@@ -196,6 +196,12 @@ const repair0 = await call('/dsh-cjgl/boot', 'POST', JSON.stringify({ action: 'r
 check('冲突修复接口可用', repair0.ok === true, JSON.stringify(repair0).slice(0, 100))
 const badAction = await call('/dsh-cjgl/boot', 'POST', JSON.stringify({ action: 'nope' }))
 check('未知动作报错', badAction.ok === false && /未知/.test(badAction.error), badAction.error)
+
+console.log('\n[6.97] 插件审核')
+const audit0 = await call('/dsh-cjgl/audit?name=' + encodeURIComponent('alpha-boot'), 'GET')
+check('审核接口可用', typeof audit0.ok === 'boolean', JSON.stringify(audit0).slice(0, 90))
+const auditNo = await call('/dsh-cjgl/audit?name=nope', 'GET')
+check('不存在的插件报错', auditNo.ok === false && /没有这个插件/.test(auditNo.error), auditNo.error)
 
 console.log('\n[7] 更新接口（网络失败也是正常返回）')
 const upd = await call('/dsh-cjgl/update', '/dsh-cjgl/scan', 'GET')
