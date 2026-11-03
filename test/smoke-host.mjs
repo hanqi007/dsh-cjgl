@@ -70,7 +70,12 @@ check('注册了 21 条路由', routes.length === 21, String(routes.length))
 check('有 /dsh-cjgl/list', !!byPath['/dsh-cjgl/list'])
 check('有 /dsh-cjgl/toggle', !!byPath['/dsh-cjgl/toggle'])
 check('有 /dsh-cjgl/config', !!byPath['/dsh-cjgl/config'])
-check('有 /dsh-cjgl/update', !!byPath['/dsh-cjgl/update', '/dsh-cjgl/scan', '/dsh-cjgl/boot', '/dsh-cjgl/audit', '/dsh-cjgl/doctor', '/dsh-cjgl/backups'])
+check('有 /dsh-cjgl/update', !!byPath['/dsh-cjgl/update'])
+check('有 /dsh-cjgl/scan', !!byPath['/dsh-cjgl/scan'])
+check('有 /dsh-cjgl/boot', !!byPath['/dsh-cjgl/boot'])
+check('有 /dsh-cjgl/audit', !!byPath['/dsh-cjgl/audit'])
+check('有 /dsh-cjgl/doctor', !!byPath['/dsh-cjgl/doctor'])
+check('有 /dsh-cjgl/backups', !!byPath['/dsh-cjgl/backups'])
 check('有 /dsh-cjgl/settings', !!byPath['/dsh-cjgl/settings'])
 check('有 /dsh-cjgl/default-boot', !!byPath['/dsh-cjgl/default-boot'])
 
@@ -217,7 +222,7 @@ const bkDel2 = await call('/dsh-cjgl/backups', 'POST', JSON.stringify({ delete: 
 check('删不存在的备份报错', bkDel2.ok === false, String(bkDel2.error || '').slice(0, 60))
 
 console.log('\n[7] 更新接口（网络失败也是正常返回）')
-const upd = await call('/dsh-cjgl/update', '/dsh-cjgl/scan', 'GET')
+const upd = await call('/dsh-cjgl/update', 'GET')
 check('返回带 current', typeof upd.current === 'string' && upd.current.length > 0, JSON.stringify(upd).slice(0, 120))
 check('带 repo 信息', upd.repo === 'hanqi007/dsh-cjgl')
 
