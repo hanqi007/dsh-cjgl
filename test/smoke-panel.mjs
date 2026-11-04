@@ -128,10 +128,12 @@ check('渲染不抛错', view.length > 0)
 check('没有渲染错误', !view.some((n) => n.cls === '__render_error'), (view.find((n) => n.cls === '__render_error') || {}).text)
 
 const titles = view.filter((n) => n.cls === '__bm_sectionTitle').map((n) => n.text)
-check('七个分区', titles.length === 7, titles.join('|'))
+check('九个分区', titles.length === 9, titles.join('|'))
 check('有「开机动画」分区', titles.some((t) => t.indexOf('开机动画') >= 0))
 check('有「其他插件」分区', titles.some((t) => t.indexOf('其他插件') >= 0))
 check('有「更新」分区', titles.some((t) => t.indexOf('更新') >= 0))
+check('有「环境诊断」分区', titles.some((t) => t.indexOf('环境诊断') >= 0))
+check('有「备份」分区', titles.some((t) => t.indexOf('备份') >= 0))
 
 check('4 张插件卡片', view.filter((n) => n.cls.indexOf('__bm_card') === 0).length === 4, String(view.filter((n) => n.cls.indexOf('__bm_card') === 0).length))
 check('显示版本', view.some((n) => n.text === 'v1.2.3'))
