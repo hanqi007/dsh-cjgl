@@ -1,4 +1,22 @@
-﻿# dsh-cjgl
+# dsh-cjgl
+
+<p align="left">
+  <a href="./README.en.md"><b>EN</b></a>
+  &nbsp;|&nbsp;
+  <a href="https://github.com/hanqi007?tab=followers">关注我们</a>
+  &nbsp;|&nbsp;
+  <a href="https://github.com/hanqi007/dsh-cjgl"><img src="https://img.shields.io/github/stars/hanqi007/dsh-cjgl?style=flat-square&logo=github&label=GitHub" height="18" alt="GitHub"></a>
+</p>
+
+<details>
+<summary>🌐 语言 / Language</summary>
+
+- [简体中文](./README.md)  ← 当前
+- [English](./README.en.md)
+
+</details>
+
+---
 
 DSH 的**启动与插件管理器**（"cjgl" = 插件管理）。在设置页里列出当前 profile 的所有插件，逐个开关；
 每张卡片右下角有「管理」，点开是这个插件的独立配置详情。
