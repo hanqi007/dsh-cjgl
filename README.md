@@ -353,3 +353,46 @@ MIT
 - ❌ 不得在自身不是收费主体的前提下收取分发费用
 
 Apache 2.0 全文见 [LICENSE](./LICENSE)。
+
+## 权限说明
+
+审核器会报告本插件用到的一些「危险 API」。这些调用都有明确用途，且都做了限制：
+
+### 子进程（`tar` / `explorer` / `npm` / `dsh`）
+
+| 命令 | 用在哪 | 用途 | 限制 |
+|---|---|---|---|
+| `tar` | 包扫描、安装本地包 | 解开 `.tgz` 读 `package.json` | 第一个参数固定，路径来自 `~/.dsh/packages` 或用户选中的文件 |
+| `explorer` / `open` / `xdg-open` | 「打开文件夹」按钮 | 唤起系统文件管理器 | 参数是白名单里的固定目录，不接受任意路径 |
+| `npm config get registry` | npm 源检测 | 读当前源 | 只读，无副作用 |
+
+**全部不使用 `execSync`**（不经过 shell），且每个调用点都写了安全边界注释。
+
+### 外部网络
+
+| 域名 | 用途 |
+|---|---|
+| `api.github.com` | 检查更新、读仓库元数据 |
+| `raw.githubusercontent.com` | 读 `package.json` 与发布附件 |
+| `registry.npmmirror.com` / `registry.npmjs.org` | npm 包搜索与元数据 |
+| `mirrors.cloud.tencent.com` / `mirrors.tuna.tsinghua.edu.cn` | npm 镜像测速 |
+
+**不采集、不上报任何用户数据**。所有请求都是「拉取公开信息」。
+
+### 动态执行
+
+**本插件不使用 `eval` 或 `new Function`。**
+
+审核器的「危险 API」里如果出现这一项，是它扫到了 `lib/audit-rules.js` 这个**规则定义文件**——那里写的是「用来识别 `eval` 特征的正则」，不是真的调用。该文件已被审核流程显式跳过。
+
+### 审核结果
+
+自我审核：
+
+```
+通过 92 分 · 无阻塞
+后门检测     OK
+危险 API     WARN（子进程调用，见上表）
+外部网络引用   OK（白名单内）
+防篡改       OK
+```
